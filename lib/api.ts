@@ -1,6 +1,6 @@
 import type { DashboardData, UsageChartData, GeneratedToken } from '@/types';
 
-const BASE_URL = 'http://localhost:3000';
+const BASE_URL = '/backend';
 
 export async function fetchDashboard(): Promise<DashboardData> {
   const res = await fetch(`${BASE_URL}/api/admin/dashboard`, { cache: 'no-store' });

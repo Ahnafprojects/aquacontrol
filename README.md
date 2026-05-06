@@ -32,7 +32,7 @@ AquaControl adalah antarmuka admin untuk sistem **Aquantum** — solusi air prep
 │                                             │
 │  ESP32 Sensor ──► Backend (port 3000)       │
 │                       │                     │
-│                  AquaControl (port 3002)    │
+│              AquaControl (port 3001)        │
 │              (Admin Dashboard)              │
 └─────────────────────────────────────────────┘
 ```
@@ -51,7 +51,7 @@ AquaControl adalah antarmuka admin untuk sistem **Aquantum** — solusi air prep
 - Toggle antara tampilan **agregat semua pelanggan** atau **per pelanggan**
 
 ### Tabel Pelanggan
-- Data lengkap: ID, Nama, Alamat, Saldo (kredit), Volume (liter), Flow Rate, Status Valve
+- Data lengkap: ID, Nama, Alamat, Saldo (kredit), Volume (liter), Flow Rate, Status Valve, Last Update
 - Badge status valve dengan animasi **glowing pulse**
 - Animasi flow rate saat air sedang mengalir
 - **Toggle switch** per baris untuk membuka/menutup valve langsung dari dashboard
@@ -71,14 +71,14 @@ AquaControl adalah antarmuka admin untuk sistem **Aquantum** — solusi air prep
 
 ## Tech Stack
 
-| Komponen | Teknologi |
-|---|---|
-| Framework | Next.js 16 (App Router) |
-| Bahasa | TypeScript |
-| Styling | Tailwind CSS v4 |
-| Chart | Recharts |
-| Font | Syne (heading) + Space Mono (data/angka) |
-| Runtime | Node.js + React 19 |
+| Komponen  | Teknologi                             |
+|-----------|---------------------------------------|
+| Framework | Next.js 16 (App Router, Turbopack)    |
+| Bahasa    | TypeScript                            |
+| Styling   | Tailwind CSS v4                       |
+| Chart     | Recharts                              |
+| Font      | Syne (heading) + Space Mono (data)    |
+| Runtime   | Node.js + React 19                    |
 
 ---
 
@@ -96,7 +96,7 @@ AquaControl adalah antarmuka admin untuk sistem **Aquantum** — solusi air prep
 ```bash
 cd aquantum-backend
 npm install
-npm start
+npm run dev
 # Backend berjalan di http://localhost:3000
 ```
 
@@ -106,10 +106,10 @@ npm start
 cd aquacontrol
 npm install
 npm run dev
-# Dashboard berjalan di http://localhost:3002
+# Dashboard berjalan di http://localhost:3001
 ```
 
-> **Catatan:** Frontend menggunakan port 3002 agar tidak bentrok dengan backend (3000) maupun Aquallet (3001).
+> **Catatan:** Jika port 3001 sudah terpakai, Next.js otomatis pindah ke port berikutnya yang tersedia.
 
 ### Build production
 
@@ -125,7 +125,7 @@ npm start
 ```
 aquacontrol/
 ├── app/
-│   ├── globals.css            # Design system: CSS variables, animasi, komponen CSS
+│   ├── globals.css            # Design system: CSS variables, animasi
 │   ├── layout.tsx             # Root layout
 │   ├── page.tsx               # Halaman login (/)
 │   ├── dashboard/
@@ -139,7 +139,7 @@ aquacontrol/
 │   └── TokenGenerator.tsx     # Form generate token + history
 ├── lib/
 │   ├── api.ts                 # Fungsi fetch ke backend
-│   └── auth.ts                # Login, logout, cek autentikasi (localStorage)
+│   └── auth.ts                # Login, logout, cek autentikasi
 └── types/
     └── index.ts               # TypeScript interfaces
 ```
@@ -152,12 +152,12 @@ aquacontrol/
 
 **URL:** `/`
 
-| Field | Nilai |
-|---|---|
-| Username | `admin` |
+| Field    | Nilai      |
+|----------|------------|
+| Username | `admin`    |
 | Password | `pdam2024` |
 
-Sesi disimpan di `localStorage` dengan key `aquacontrol_auth`. Setelah login berhasil, pengguna diarahkan ke `/dashboard`. Mengakses `/dashboard` atau `/generate-token` tanpa login akan redirect otomatis ke halaman ini.
+Sesi disimpan di `localStorage` dengan key `aquacontrol_auth`. Setelah login berhasil, pengguna diarahkan ke `/dashboard`. Mengakses halaman terproteksi tanpa login akan redirect otomatis ke halaman ini.
 
 ---
 
@@ -167,12 +167,12 @@ Sesi disimpan di `localStorage` dengan key `aquacontrol_auth`. Setelah login ber
 
 **Summary Cards**
 
-| Kartu | Sumber Data | Warna |
-|---|---|---|
-| Total Pelanggan Aktif | `summary.total_aktif` (valve = true) | Hijau |
-| Total Pelanggan Nonaktif | `summary.total_nonaktif` (valve = false) | Merah |
-| Volume Pemakaian Hari Ini | `summary.total_volume_hari_ini` | Biru |
-| Total Saldo Beredar | `summary.total_saldo_beredar` | Kuning |
+| Kartu                    | Sumber Data                      | Warna  |
+|--------------------------|----------------------------------|--------|
+| Total Pelanggan Aktif    | `summary.total_aktif`            | Hijau  |
+| Total Pelanggan Nonaktif | `summary.total_nonaktif`         | Merah  |
+| Volume Pemakaian Hari Ini| `summary.total_volume_hari_ini`  | Biru   |
+| Total Saldo Beredar      | `summary.total_saldo_beredar`    | Kuning |
 
 **Grafik Pemakaian**
 
@@ -182,18 +182,18 @@ Data diambil dari `GET /api/admin/usage-chart`. Tersedia dua mode:
 
 **Tabel Pelanggan**
 
-Data diambil dari `GET /api/admin/dashboard` setiap 3 detik.
+Data di-poll dari `GET /api/admin/dashboard` setiap **3 detik**.
 
-| Kolom | Keterangan |
-|---|---|
-| ID | Kode unik pelanggan (contoh: P001) |
-| Nama | Nama lengkap pelanggan |
-| Alamat | Alamat pelanggan |
-| Saldo (Kredit) | Saldo tersisa dalam satuan kredit |
-| Volume (L) | Total liter air yang sudah mengalir |
-| Flow Rate | Debit aliran saat ini (L/menit) — animasi jika > 0 |
-| Status Valve | Badge AKTIF/NONAKTIF + toggle switch on/off |
-| Last Update | Waktu data terakhir diperbarui |
+| Kolom       | Keterangan                                          |
+|-------------|-----------------------------------------------------|
+| ID          | Kode unik pelanggan (contoh: P001)                  |
+| Nama        | Nama lengkap pelanggan                              |
+| Alamat      | Alamat pelanggan                                    |
+| Saldo       | Saldo tersisa dalam satuan kredit                   |
+| Volume (L)  | Total liter air yang sudah mengalir                 |
+| Flow Rate   | Debit aliran saat ini (L/menit) — animasi jika > 0  |
+| Status Valve| Badge AKTIF/NONAKTIF + toggle switch on/off         |
+| Last Update | Waktu data terakhir diperbarui oleh ESP32           |
 
 **Toggle Valve**
 
@@ -221,12 +221,12 @@ Base URL dikonfigurasi di `lib/api.ts`:
 const BASE_URL = 'http://localhost:3000';
 ```
 
-| Endpoint | Method | Digunakan di |
-|---|---|---|
-| `/api/admin/dashboard` | GET | Dashboard (polling 3 detik) |
-| `/api/admin/usage-chart` | GET | Dashboard (polling 3 detik) |
-| `/api/admin/valve` | POST | Toggle valve per pelanggan |
-| `/api/admin/generate-token` | POST | Halaman Generate Token |
+| Endpoint                            | Method | Digunakan di                   |
+|-------------------------------------|--------|-------------------------------|
+| `/api/admin/dashboard`              | GET    | Dashboard (polling 3 detik)   |
+| `/api/admin/usage-chart`            | GET    | Dashboard (polling 3 detik)   |
+| `/api/admin/valve`                  | POST   | Toggle valve per pelanggan    |
+| `/api/admin/generate-token`         | POST   | Halaman Generate Token        |
 
 ---
 
@@ -245,7 +245,7 @@ Saldo ditampilkan dalam satuan **kredit** di seluruh antarmuka.
 
 ## Kredensial Default
 
-| Field | Nilai |
-|---|---|
-| Username | `admin` |
+| Field    | Nilai      |
+|----------|------------|
+| Username | `admin`    |
 | Password | `pdam2024` |
